@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prods EJS</title>
+</head>
+<body>
+    <h1>Productos</h1>
+    <div id="divProds"></div>
+
+    <script>
+      let mostrarProds = document.getElementById("divProds");
+
+      const carritoData =[]
+      const items =[]
+      function mostrarProdsAll(){
+      fetch('http://127.0.0.1:8080/api/json')
+        .then(resp => resp.json())
+        .then(item => {item.forEach(prod =>{
+              items.push(prod)
+              let card = document.createElement("div")
+              card.setAttribute("class", "card")
+              card.innerHTML += `
+              <img class="card__img" src="${prod.img}">
+              <h3 class="card__nombre">${prod.nombre}</h3>
+              <p class="card__precio">$${prod.precio}</p>`
+              let botonCompra = document.createElement("button")
+              botonCompra.innerText = ("Agregar al carrito")
+              card.append(botonCompra)
+              mostrarProds.append(card)
+
+              /* botonCompra.addEventListener("click", function(){
+                  let bebcant= (prod.cantidad >=1)? true : false
+                  if(bebcant){
+                      divCarrito.innerHTML=``
+                      prod.cantidad++;
+                      mostrarCarrito();
+                  }
+                  else{
+                      items.push(prod)
+                      prod.cantidad++;
+                      divCarrito.innerHTML=``
+                      mostrarCarrito(); 
+                  }
+              }) */
+          })
+      })}
+    mostrarProdsAll();
+    </script>
+</body>
+</html>

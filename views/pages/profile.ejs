@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>profile</title>
+</head>
+<body>
+    <h1>Datos del usuario</h1>
+    <div>
+        <%= user.username%><br />
+        <%= user.password%><br />
+        <%= user.email%><br />
+        <%= user.avatar%><br />
+        <%= user.number%><br />
+    </div>
+    <a href="/api/productos">Ver productos</a>
+    <a href="/api/productos/logout">Salir</a>
+</body>
+</html>
