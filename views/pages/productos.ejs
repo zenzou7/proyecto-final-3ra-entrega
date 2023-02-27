@@ -10,44 +10,109 @@
     <h1>Productos</h1>
     <div id="divProds"></div>
 
+    <div id="divCarrito"></div>
+
     <script>
       let mostrarProds = document.getElementById("divProds");
+      let mostrarCart = document.getElementById("divCarrito");
 
-      const carritoData =[]
+      let carritoData =[]
       const items =[]
-      function mostrarProdsAll(){
-      fetch('http://127.0.0.1:8080/api/json')
-        .then(resp => resp.json())
-        .then(item => {item.forEach(prod =>{
+      let url = 'http://127.0.0.1:8080/api/json'
+      fetch(url)
+      .then(resp => resp.json())
+      .then(item => mostrarProdsAll(item))
+
+      function mostrarProdsAll(item){
+        item.forEach(prod =>{
               items.push(prod)
               let card = document.createElement("div")
               card.setAttribute("class", "card")
               card.innerHTML += `
-              <img class="card__img" src="${prod.img}">
-              <h3 class="card__nombre">${prod.nombre}</h3>
-              <p class="card__precio">$${prod.precio}</p>`
+              <img class="card__img" width="100px" src="${prod.thumbnail}">
+              <h3 class="card__nombre">${prod.name}</h3>
+              <p class="card__precio">$${prod.price}</p>`
               let botonCompra = document.createElement("button")
               botonCompra.innerText = ("Agregar al carrito")
               card.append(botonCompra)
               mostrarProds.append(card)
 
-              /* botonCompra.addEventListener("click", function(){
-                  let bebcant= (prod.cantidad >=1)? true : false
-                  if(bebcant){
-                      divCarrito.innerHTML=``
+               botonCompra.addEventListener("click", function(){
+                  let cantidad= (prod.cantidad >=1)? true : false
+                  if(cantidad){
+                      mostrarCart.innerHTML=``
                       prod.cantidad++;
-                      mostrarCarrito();
+                      mostrarCarrito()
                   }
                   else{
-                      items.push(prod)
-                      prod.cantidad++;
-                      divCarrito.innerHTML=``
-                      mostrarCarrito(); 
+                      carritoData.push(prod)
+                      prod.cantidad = 1;
+                      mostrarCart.innerHTML=`` 
+                      mostrarCarrito()
                   }
-              }) */
+              }) 
           })
-      })}
-    mostrarProdsAll();
+      }
+
+      let carritoAlert = document.createElement("h2")
+        carritoAlert.setAttribute("class", "alerta")
+
+        if(carritoData.length==0){
+            carritoAlert.innerText = ("Aun no tienes productos en tu carro")
+            mostrarCart.append(carritoAlert)
+        }
+
+
+        function mostrarCarrito(){
+            carritoAlert.remove()
+
+            carritoData.forEach((prod) => {
+                const carritoDiv = document.createElement("li")
+                carritoDiv.innerHTML += `
+                <img src="${prod.thumbnail}">
+                <h3>${prod.name}</h3>
+                <h3>$${prod.price}</h3>`
+                let botonBorrar = document.createElement("button")
+                botonBorrar.innerText = ("X")
+                botonBorrar.setAttribute("data",prod.name)
+                carritoDiv.append(botonBorrar)
+                mostrarCart.append(carritoDiv)
+                
+                
+                botonBorrar.onclick = (e) =>{
+                    const prodNombre = e.target.getAttribute(`data`)
+                    carritoData = carritoData.filter(prod => prod.name !== prodNombre)
+                    mostrarCart.innerHTML=``
+                    mostrarCarrito()
+                }
+            })
+
+            //Costo Total del carro
+            function total(){
+                let suma=0;
+                carritoData.forEach((prod) => {
+                    suma = suma + prod.price
+                })
+                return suma;
+            }
+
+            let costoTotal = document.createElement("p")
+            costoTotal.innerText =(`Costo total: $${total()}`)
+            mostrarCart.append(costoTotal)
+
+            let botonConfirmarCompra = document.createElement('button')
+            botonConfirmarCompra.innerText = ("Confirmar compra")
+            mostrarCart.append(botonConfirmarCompra)
+            botonConfirmarCompra.onclick = () =>{
+                fetch('http://127.0.0.1:8080/api/pedidos',{
+                    method: 'POST',
+                    body: JSON.stringify(carritoData),
+                    headers:{
+                        "Content-type": "application/json" 
+                    }
+                })
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const { sendMail } = require('./nodemailer.js');
 
 const cors = require('cors');
 
@@ -40,6 +41,9 @@ const logger = winston.createLogger({
 });
 
 const app = express();
+
+const httpServer = require('http').createServer(app);
+const io = require('socket.io')(httpServer);
 
 app.use(cors());
 
@@ -104,6 +108,7 @@ passport.use(
           number: req.body.number,
           avatar: req.body.avatar,
         };
+        sendMail(newUser);
         Usuarios.create(newUser, (err, userWithId) => {
           if (err) {
             logger.log('error', `Error in saving ${err}- log error`);
@@ -119,14 +124,13 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-  done(null, user._id);
+  done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-  Usuarios.findById(id, done);
+passport.deserializeUser(async (id, done) => {
+  const user = await Usuarios.findById(id);
+  done(user);
 });
-
-app.use(passport.initialize());
 
 //Session
 app.use(
@@ -137,17 +141,17 @@ app.use(
         useNewUrlParser: true,
         useUnifiedTopology: true,
       },
+      ttl: 60000 * 10,
+      cookie: { maxAge: 60000 * 10 },
     }),
     secret: config.SECRET,
-    resave: true,
+    resave: false,
     saveUninitialized: false,
-    cookie: { expires: 60000 },
   })
 );
 
-//Socket.io
-const httpServer = require('http').createServer(app);
-const io = require('socket.io')(httpServer);
+app.use(passport.session());
+app.use(passport.initialize());
 
 httpServer.listen(args.PORT, () => {
   console.log(`Server on http://${config.HOST}:${args.PORT}`);
@@ -164,7 +168,42 @@ app.get('/api/json', async (req, res) => {
   res.json(data);
 });
 
-router.get('/', route.getProds);
+app.post('/api/pedidos', (req, res) => {
+  logger.log('info', 'Post en /api/pedidos - log info');
+  try {
+    const body = req.body;
+
+    const { username, password, number, avatar, email } = req.user;
+
+    const pedido = {
+      usuario: username,
+      email: email,
+      numero: number,
+      avatar: avatar,
+      pedido: body,
+    };
+    console.log(pedido);
+    classPedidos.save(pedido);
+    res.json('Pedido hecho con exito!');
+  } catch (err) {
+    logger.log('error', `Error in Post /api/pedidos: ${err}- log error`);
+  }
+});
+
+router.get('/', async (req, res) => {
+  logger.log('info', 'Get /api/productos - log info');
+  try {
+    if (req.isAuthenticated()) {
+      const prods = await classProductos.getAll();
+
+      res.render('pages/productos');
+    } else {
+      res.render('pages/login');
+    }
+  } catch (err) {
+    logger.log('error', `Error in Get /: ${err}- log error`);
+  }
+});
 
 router.post('/form', upload.none(), route.routerPostForm);
 
@@ -190,7 +229,7 @@ app.get('/info', route.getInfo);
 
 app.get('/api/randoms', route.getRandoms);
 
-app.get('*', route.getInexistent);
+/* app.get('*', route.getInexistent); */
 //SOCKET
 io.on('connection', async (socket) => {
   console.log('Usuario conectado');
